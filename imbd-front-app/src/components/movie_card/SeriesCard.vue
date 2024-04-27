@@ -1,0 +1,239 @@
+<template>
+  <div :id="this.series.id" class="card rounded-3" @click="setId(this.movieId)" v-if="this.series">
+    <div class="h-100 zoom-effect">
+      <router-link :to="{
+    name: 'ShowDetails',
+    params: { id: this.series.id, type: this.type },
+  }">
+        <img :src="this.series.photo_url
+      ? 'http://127.0.0.1:8000' + this.series.photo_url
+      : 'https://w7.pngwing.com/pngs/227/975/png-transparent-projector-movie-cinema-projection-tape-vintage-motion-strip-entertainment-theater-thumbnail.png'
+    " class="card-img-top h-100" alt="Show poster" />
+      </router-link>
+    </div>
+
+    <div class="card-body">
+      <h5 class="card-title">
+        {{ this.series.title }}
+      </h5>
+
+      <div class="d-flex align-items-center">
+        <div class="card-text">
+          <div class="d-flex flex-row align-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16" class="rating mr-2">
+              <path fill="currentColor"
+                d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327l4.898.696c.441.062.612.636.282.95l-3.522 3.356l.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z" />
+            </svg>
+            <span class="pt-1 mx-1">{{ this.series.rating }}</span>
+
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16" class="rate_star"
+              data-bs-toggle="modal" :data-bs-target="`#myModal${this.series.id}_${this.type}`"
+              v-if="$store.getters.isAuthenticated">
+              <path fill="currentColor"
+                d="M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256l4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73l3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356l-.83 4.73zm4.905-2.767l-3.686 1.894l.694-3.957a.56.56 0 0 0-.163-.505L1.71 6.745l4.052-.576a.53.53 0 0 0 .393-.288L8 2.223l1.847 3.658a.53.53 0 0 0 .393.288l4.052.575l-2.906 2.77a.56.56 0 0 0-.163.506l.694 3.957l-3.686-1.894a.5.5 0 0 0-.461 0z" />
+            </svg>
+            <span class="pt-1 mx-1">{{ this.series.rate }}</span>
+            <!-- The Modal -->
+            <div class="modal" :id="`myModal${this.series.id}_${this.type}`">
+              <div class="modal-dialog">
+                <div class="modal-content w-100">
+                  <!-- Modal Header -->
+                  <div class="modal-header container">
+                    <h4 class="modal-title">Leave your rating</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <!-- Modal body -->
+                  <div class="modal-body" v-if="isLogged()">
+                    <star-rating :rating="rating" :max-rating="10" :star-size="20" :active-color="orange"
+                      @update:rating="setRating"></star-rating>
+                  </div>
+                  <div v-else>You must be logged in!</div>
+
+                  <!-- Modal footer -->
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                      Close
+                    </button>
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" @click="sendRating">
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="" v-if="isLogged()">
+        <favorite-series :add-favorite="addFavorite" @click="addFavorite">
+        </favorite-series>
+      </div>
+      <!-- <div v-else>
+        <span class="badge badge text-bg-primary float-end p-2">New</span>
+      </div> -->
+    </div>
+    <div class="card-footer">
+      <small class="text-muted" v-if="this.series.director">Director:
+        <a href="#">{{ this.series.director.first_name }}
+          {{ this.series.director.last_name }}</a></small>
+      <small class="text-muted" v-else>
+        No director information available
+      </small>
+    </div>
+  </div>
+</template>
+
+<script>
+import StarRating from "vue-star-rating";
+import FavoriteSeries from "../add_favorite/FavoriteSeries.vue";
+import api from "@/httpClient/api";
+
+export default {
+  props: ["series", "type"],
+
+  components: {
+    StarRating,
+    FavoriteSeries,
+  },
+  watch: {
+    series() { },
+  },
+  data() {
+    return {
+      rating: 0,
+      movieId: this.series.id,
+      showType: "",
+      timer: "",
+    };
+  },
+
+  mounted() {
+    this.isLogged();
+  },
+
+  methods: {
+    setRating(rating) {
+      this.rating = rating;
+    },
+
+    setId(id) {
+      this.movieId = id;
+    },
+
+    isLogged() {
+      if (this.$store.getters.userId != null) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    sendRating() {
+      api(`favorite/rating-s/${this.movieId}/list`, 'post',
+        {
+          user: this.$store.getters.userId,
+          rating: this.rating,
+        }).then(res => {
+          console.log('res', res)
+          
+          if (res.status === 'ok'){
+            this.$emit('call-again')
+            alert("Thanks for rating!");
+          }
+          else if (res.status === 'service Error')
+            if (res.data.data.non_field_errors)
+              alert("Already rated")
+        })
+
+    },
+    addFavorite() {
+      return this.series.id;
+    },
+  },
+};
+</script>
+
+<style scoped>
+.card {
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.card-img-top {
+  height: 300px;
+  object-fit: cover;
+}
+
+.card-title {
+  margin-bottom: 10px;
+  font-size: 1.25rem;
+}
+
+.card-text {
+  margin-bottom: 15px;
+}
+
+.card-footer {
+  background-color: #f8f9fa;
+  padding: 10px 15px;
+}
+
+.director-link {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.director-link:hover {
+  text-decoration: underline;
+}
+
+.zoom-effect {
+  overflow: hidden;
+}
+
+.zoom-effect img {
+  transition: transform 0.3s ease-in-out;
+}
+
+.zoom-effect:hover img {
+  transform: scale(1.1);
+}
+
+.rating {
+  color: rgb(250, 175, 37);
+  margin-right: 10px;
+}
+
+.rate_star {
+  margin-left: 40px;
+}
+
+.rate_star:hover {
+  color: orange;
+  border-radius: 100%;
+  box-shadow: rgb(255, 169, 64) 0 0 20px;
+}
+
+.favorite {
+  display: inline-block;
+  padding: 2px 7px;
+  background: orange;
+  border-radius: 10%;
+}
+
+.favorite:hover {
+  background: rgb(255, 169, 64);
+  color: aliceblue;
+  transform: scale(1.1);
+}
+
+/* Star component */
+
+.modal-dialog {
+  width: 1000px;
+}
+</style>
+../add_favorite/FavoriteMovie.vue
