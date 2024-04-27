@@ -4,7 +4,7 @@
         <div class="container">
             <div class="d-flex flex-wrap align-items-center justify-content-between">
                 <ul class="nav col-12 col-lg-auto  mb-2 justify-content-center mb-md-0">
-                    <li class="imbd-box"><span class="logo">IMBD</span></li>
+                    <li class="imbd-box"><span class="logo">REVIEWS</span></li>
                     <li><router-link class="nav-link px-2 text-white" :to="{ name: 'home-page' }">Home</router-link>
                     </li>
                     <li v-if="isAdmin"><button class="btn btn-primary mx-2 mt-1" @click="seeSettings()">
