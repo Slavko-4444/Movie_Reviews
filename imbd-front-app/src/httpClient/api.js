@@ -21,6 +21,8 @@ function api(
         axios(requestDATA)
             .then(res => responseHandler(res, resolve))
             .catch(async error => {
+                console.log('sta je problem', error)
+                console.log('a sta je poziv', requestDATA)
                 if (error.response.status === 403) {
                     const newToken = await refreshToken();
                     if (!newToken){
